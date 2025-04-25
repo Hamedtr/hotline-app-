@@ -1,97 +1,132 @@
 import streamlit as st
 import json
-from datetime import datetime
 import jdatetime
+from datetime import datetime
 
 st.set_page_config(page_title="Hotline", page_icon="🧾", layout="centered")
 
 if "user_code" not in st.session_state:
     st.session_state.user_code = None
+if "records" not in st.session_state:
+    st.session_state.records = []
 
+# ورود کاربر
 def login():
     st.title("ورود به Hotline")
-    user_code = st.text_input("کد اختصاصی کاربر", max_chars=20)
+    code = st.text_input("کد کاربر (مثلاً 101-Ahmadi)")
     if st.button("ورود"):
-        if user_code:
-            st.session_state.user_code = user_code
+        if code:
+            st.session_state.user_code = code
         else:
-            st.warning("لطفاً یک کد وارد کنید")
+            st.warning("کد را وارد کنید")
 
-def form_page():
-    st.title("Hotline | ثبت روزانه")
+# فرم ثبت جدید
+def new_form():
+    st.title("ثبت جدید")
 
-    st.subheader("۱. اطلاعات پرسنل")
-    supervisor = st.text_input("نام سرپرست")
-    person2 = st.text_input("نام نفر دوم")
-    person3 = st.text_input("نام نفر سوم")
-    driver = st.text_input("نام راننده")
+    with st.form("hotline_form"):
+        st.subheader("مشخصات پرسنل (فقط امروز)")
+        supervisor = st.text_input("نام سرپرست")
+        person2 = st.text_input("نفر دوم")
+        person3 = st.text_input("نفر سوم")
+        driver = st.text_input("راننده")
 
-    st.subheader("۲. اقلام مصرفی")
-    consumables = []
-    with st.expander("افزودن اقلام مصرفی"):
-        item = st.text_input("نام قلم")
-        qty = st.number_input("تعداد", min_value=1, step=1)
-        if st.button("افزودن به لیست مصرفی"):
-            if item:
-                st.session_state.setdefault("consumables", []).append({"name": item, "quantity": qty})
-    
-    st.write("اقلام ثبت‌شده:")
-    for c in st.session_state.get("consumables", []):
-        st.markdown(f"- {c['name']} ({c['quantity']})")
+        st.subheader("اطلاعات عملیات")
+        op_type = st.selectbox("نوع طرح", ["طرح شخصی", "طرح اداری", "اتفاقاتی", "تعمیرات پیشگیرانه"])
+        request_number = st.text_input("شماره درخواست")
 
-    st.subheader("۳. اقلام اسقاطی")
-    scrap = []
-    with st.expander("افزودن اقلام اسقاطی"):
-        item_s = st.text_input("نام قلم اسقاطی")
-        qty_s = st.number_input("تعداد اسقاطی", min_value=1, step=1, key="scrap_qty")
-        if st.button("افزودن به لیست اسقاطی"):
-            if item_s:
-                st.session_state.setdefault("scraps", []).append({"name": item_s, "quantity": qty_s})
-    
-    st.write("اقلام اسقاطی ثبت‌شده:")
-    for s in st.session_state.get("scraps", []):
-        st.markdown(f"- {s['name']} ({s['quantity']})")
+        st.subheader("سرپرستان مشترک")
+        shared = st.text_area("نام‌ها (با ویرگول جدا کنید)")
 
-    if st.button("ثبت اطلاعات امروز"):
-        today = jdatetime.date.today().isoformat()
-        record = {
-            "date": today,
-            "user": st.session_state.user_code,
-            "personnel": {
-                "supervisor": supervisor,
-                "person2": person2,
-                "person3": person3,
-                "driver": driver
-            },
-            "consumables": st.session_state.get("consumables", []),
-            "scraps": st.session_state.get("scraps", [])
-        }
-        st.session_state.setdefault("records", []).append(record)
-        st.success("ثبت شد!")
+        st.subheader("خطوط")
+        line_data = st.text_area("شماره خط و ایستگاه (مثلاً: 12-ایستگاه حافظ\n34-ایستگاه سعدی)")
 
+        line_load = st.text_input("بار خط")
+        address = st.text_input("آدرس محل اجرا")
+
+        st.subheader("نوع عملیات")
+        operation_code = st.text_input("کد عملیات")
+        operation_title = st.text_input("عنوان عملیات")
+        quantity = st.number_input("تعداد", step=1, min_value=1)
+
+        st.subheader("اقلام مصرفی")
+        consumables = st.text_area("هر قلم در یک خط (مثلاً: پیچ 200 - 3)")
+
+        st.subheader("اقلام اسقاطی")
+        scraps = st.text_area("هر قلم در یک خط (مثلاً: برقگیر پلیمری - 1)")
+
+        st.subheader("عکس‌ها")
+        photo_before = st.file_uploader("عکس قبل از کار")
+        photo_during = st.file_uploader("عکس حین کار")
+        photo_after = st.file_uploader("عکس بعد از کار")
+
+        submitted = st.form_submit_button("ثبت فرم")
+        if submitted:
+            today = jdatetime.date.today().isoformat()
+            rec = {
+                "user": st.session_state.user_code,
+                "date": today,
+                "datetime": str(datetime.now()),
+                "personnel": {
+                    "supervisor": supervisor,
+                    "person2": person2,
+                    "person3": person3,
+                    "driver": driver
+                },
+                "type": op_type,
+                "request_number": request_number,
+                "shared_supervisors": [x.strip() for x in shared.split(",") if x.strip()],
+                "lines": [{"line": x.split("-")[0], "station": x.split("-")[1]} for x in line_data.split("\n") if "-" in x],
+                "line_load": line_load,
+                "address": address,
+                "operation": {"code": operation_code, "title": operation_title},
+                "quantity": quantity,
+                "consumables": parse_items(consumables),
+                "scraps": parse_items(scraps),
+                "photos": {
+                    "before": photo_before.name if photo_before else None,
+                    "during": photo_during.name if photo_during else None,
+                    "after": photo_after.name if photo_after else None
+                }
+            }
+            st.session_state.records.append(rec)
+            st.success("فرم با موفقیت ثبت شد.")
+
+def parse_items(text):
+    result = []
+    for line in text.split("\n"):
+        parts = line.split("-")
+        if len(parts) == 2:
+            result.append({"name": parts[0].strip(), "quantity": int(parts[1].strip())})
+    return result
+
+# پایان روز و خروجی
 def end_day():
     st.title("پایان کار امروز")
     today = jdatetime.date.today().isoformat()
-    records = [r for r in st.session_state.get("records", []) if r["date"] == today]
-    
+    records = [r for r in st.session_state.records if r["date"] == today]
+
     if not records:
         st.info("هیچ رکوردی برای امروز ثبت نشده است.")
         return
 
-    st.subheader("رکوردهای امروز:")
-    for i, r in enumerate(records, 1):
-        st.markdown(f"### فرم {i} - {r['personnel']['supervisor']}")
+    for i, rec in enumerate(records, 1):
+        st.markdown(f"### فرم {i} | عملیات: {rec['operation']['title']}")
 
-    if st.button("ساخت فایل JSON و ارسال"):
-        json_data = json.dumps(records, ensure_ascii=False, indent=2)
-        st.download_button("دانلود فایل JSON", data=json_data, file_name=f"hotline_{today}.json", mime="application/json")
-        st.info("برای ارسال فایل به واتساپ، از دکمه دانلود استفاده و سپس در واتساپ ارسال کنید.")
+    json_data = json.dumps(records, ensure_ascii=False, indent=2)
+    st.download_button("دانلود خروجی JSON", data=json_data, file_name=f"hotline_{today}.json", mime="application/json")
 
+    number = st.text_input("شماره واتساپ (بدون 0، مثل 912...)")
+    if st.button("ارسال در واتساپ"):
+        link = f"https://wa.me/98{number}?text=فایل گزارش امروز آماده ارسال است."
+        st.markdown(f"[ارسال واتساپ]({link})", unsafe_allow_html=True)
+
+# اجرای اپ
 if st.session_state.user_code is None:
     login()
 else:
-    page = st.sidebar.selectbox("انتخاب صفحه", ["ثبت جدید", "پایان کار امروز"])
-    if page == "ثبت جدید":
-        form_page()
-    elif page == "پایان کار امروز":
+    option = st.sidebar.radio("انتخاب عملیات", ["ثبت جدید", "پایان کار امروز"])
+    if option == "ثبت جدید":
+        new_form()
+    else:
         end_day()
