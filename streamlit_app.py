@@ -5,11 +5,11 @@ import json
 from datetime import datetime
 
 # بارگذاری داده‌ها
-with open("data/activities_cleaned_final.json", "r", encoding="utf-8") as f:
+with open("activities_cleaned_final.json", "r", encoding="utf-8") as f:
     activity_options = json.load(f)
-with open("data/consumables.json", "r", encoding="utf-8") as f:
+with open("consumables.json", "r", encoding="utf-8") as f:
     consumables = json.load(f)
-with open("data/scraps.json", "r", encoding="utf-8") as f:
+with open("scraps.json", "r", encoding="utf-8") as f:
     scraps = json.load(f)
 
 st.set_page_config(page_title="Hotline 2025", layout="centered")
