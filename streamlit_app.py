@@ -4,14 +4,15 @@ import jdatetime
 import json
 from datetime import datetime
 
-# بارگذاری لیست فعالیت‌ها و کالاها از فایل JSON
-with open("activities_cleaned.json", "r", encoding="utf-8") as f:
+# بارگذاری داده‌ها از فایل‌های جیسون
+with open("activity_options.json", "r", encoding="utf-8") as f:
     activity_options = json.load(f)
 
-with open("consumables_scraps.json", "r", encoding="utf-8") as f:
-    item_data = json.load(f)
-    consumables = item_data["consumables"]
-    scraps = item_data["scraps"]
+with open("consumables.json", "r", encoding="utf-8") as f:
+    consumables = json.load(f)
+
+with open("scraps.json", "r", encoding="utf-8") as f:
+    scraps = json.load(f)
 
 st.set_page_config(page_title="Hotline 2.0", layout="centered")
 
@@ -24,7 +25,7 @@ if "activities" not in st.session_state:
 if "locations" not in st.session_state:
     st.session_state.locations = [{"line_station": "", "code": ""}]
 if "gps" not in st.session_state:
-    st.session_state.gps = {"lat": "29.6100", "lon": "52.5310", "accuracy": "±10m"}
+    st.session_state.gps = {"lat": "", "lon": "", "accuracy": ""}
 
 def show_login():
     st.title("ورود روزانه")
@@ -58,31 +59,31 @@ def show_activity_form():
             st.session_state.locations.append({"line_station": "", "code": ""})
 
     st.markdown("**موقعیت مکانی (مثال):**")
+    st.session_state.gps = {
+        "lat": "29.6100",
+        "lon": "52.5310",
+        "accuracy": "±10m"
+    }
     st.info(f"موقعیت فعلی: عرض {st.session_state.gps['lat']}، طول {st.session_state.gps['lon']} ({st.session_state.gps['accuracy']})")
 
     with st.form("act_form", clear_on_submit=True):
         st.markdown("### اطلاعات عملیات")
         op = st.selectbox("شرح فعالیت", activity_options)
         work_type = st.selectbox("نوع کار", ["طرح شخصی", "طرح اداری", "اتفاقاتی", "تعمیرات پیشگیرانه"])
-        department = st.text_input("امور مربوطه")
-        address = st.text_input("آدرس محل اجرا")
-        request_no = st.text_input("شماره درخواست خط گرم")
 
         cons_data = []
         st.markdown("### اقلام مصرفی")
-        for i in range(2):
-            col1, col2 = st.columns([3, 1])
-            item = col1.selectbox(f"کالای مصرفی {i+1}", options=consumables, key=f"cons{i}")
-            count = col2.number_input("تعداد", min_value=1, step=1, key=f"cons_count{i}")
-            cons_data.append({"item": item, "count": count})
+        for i in range(3):
+            c_item = st.selectbox(f"کالای مصرفی {i+1}", options=consumables, key=f"cons{i}")
+            c_count = st.number_input(f"تعداد", min_value=1, step=1, key=f"cons_count{i}")
+            cons_data.append({"item": c_item, "count": c_count})
 
         scrp_data = []
         st.markdown("### اقلام برگشتی")
         for i in range(2):
-            col1, col2 = st.columns([3, 1])
-            item = col1.selectbox(f"کالای برگشتی {i+1}", options=scraps, key=f"scr{i}")
-            count = col2.number_input("تعداد ", min_value=1, step=1, key=f"scr_count{i}")
-            scrp_data.append({"item": item, "count": count})
+            s_item = st.selectbox(f"کالای برگشتی {i+1}", options=scraps, key=f"scr{i}")
+            s_count = st.number_input(f"تعداد", min_value=1, step=1, key=f"scr_count{i}")
+            scrp_data.append({"item": s_item, "count": s_count})
 
         p1 = st.file_uploader("عکس قبل")
         p2 = st.file_uploader("عکس حین")
@@ -92,9 +93,6 @@ def show_activity_form():
             st.session_state.activities.append({
                 "operation": op,
                 "work_type": work_type,
-                "department": department,
-                "address": address,
-                "request_no": request_no,
                 "locations": st.session_state.locations.copy(),
                 "gps": st.session_state.gps,
                 "consumables": cons_data,
