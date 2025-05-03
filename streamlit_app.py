@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 # بارگذاری لیست فعالیت‌ها و کالاها از فایل JSON
-with open("activities_cleaned_final.json", "r", encoding="utf-8") as f:
+with open("activities_cleaned.json", "r", encoding="utf-8") as f:
     activity_options = json.load(f)
 
 with open("consumables_scraps.json", "r", encoding="utf-8") as f:
