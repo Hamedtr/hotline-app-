@@ -1,7 +1,12 @@
+
 import streamlit as st
 import jdatetime
-from datetime import datetime
 import json
+from datetime import datetime
+
+# بارگذاری لیست فعالیت‌ها از فایل JSON
+with open("activities_cleaned_final.json", "r", encoding="utf-8") as f:
+    activity_options = json.load(f)
 
 st.set_page_config(page_title="Hotline 2.0", layout="centered")
 
@@ -11,47 +16,10 @@ if "personnel" not in st.session_state:
     st.session_state.personnel = {}
 if "activities" not in st.session_state:
     st.session_state.activities = []
-
-operations = [
-    "استفاده از بالابر خط گرم به همراه نیروی کارورز",
-    "استفاده از گروه خط گرم بصورت آماده‌باش",
-    "استفاده از گروه خط گرم برای عبور محموله ترافیکی",
-    "استفاده از گروه خط گرم به صورت ساعتی",
-    "تعویض، نصب یا برداشت باندینگ مقره",
-    "اصلاح زدگی سیم با اسپلايس پرسی",
-    "اصلاح زدگی سیم با کلمپ یا اسپلايس اتوماتيک",
-    "اصلاح یراق‌آلات شبکه به روش خط گرم",
-    "انتهايی کردن پایه عبوری بدون نصب کراس آرم",
-    "باز و بسته کردن جمپر سر تياف یا ترانس (تا ۲ ساعت)",
-    "باز و بسته کردن جمپر سر تياف یا ترانس (بیش از ۳ ساعت)",
-    "باز و بسته کردن جمپر با تعویض جمپرها",
-    "رفع کجی پایه در شبکه تک مداره",
-    "رفع کجی پایه در شبکه دو مداره",
-    "برداشت یا نصب یراق یا اشیای اضافی روی شبکه",
-    "برکناری پایه معیوب در خط دو مداره",
-    "برکناری پایه معیوب در خط یک مداره"
-]
-
-consumables = [
-    "12*40", "اسپیسر", "اشپیل", "پیچ", "پیچ 40*12", "پیچ دوسر350", "پیچ دوسر400", "پیچ200", "پیچ250", "پیچ300",
-    "پیچ350", "پیچ400", "پیچ450", "پیچ450دوسر", "پیچ5 سانتی", "پیچ500", "تسمه", "جمپرگیر", "راس تیری",
-    "سیم باندینگ", "سیم مسی25", "سیم120 روکشدار", "سیم50 روکشدار", "سیم70 روکشدار", "کابل مسی25",
-    "کابلشو بیمتال120", "کابلشو بیمتال50", "کابلشو بیمتال70", "کابلشو مسی25", "کانکتورشکافدار35-16",
-    "کانکتورمسی", "کاور برقگیر", "کاور بوشینگ", "کاور جرقه گیر", "کاور سوزنی پلیمری", "کاور سوزنی سرامیکی",
-    "کاور کات اوت", "کاور کلمپ", "کراس آرم2.44", "کرپی400", "کرپی450", "کلمپ بیمتال", "کلمپ جمپر",
-    "مقره بشقابی سرامیکی", "مقره بشقابی پلیمری", "مقره جمپرگیر", "مقره سوزنی سرامیکی", "مقره سوزنی پلیمری",
-    "مهره اضاف", "مهره چشمی", "واشرمربع"
-]
-
-scraps = [
-    "12*40", "اسپیسر", "برقگیر پلیمری", "برقگیر سرامیکی", "پیچ200", "پیچ250", "پیچ300", "پیچ350", "پیچ400",
-    "تسمه", "راس تیر", "زین هات لاین", "کلمپ هات لاین", "سیم روکشدار120", "سیم روکشدار50", "سیم روکشدار70",
-    "سیم مسی16", "سیم مهار", "سیم120 بدون روکش", "سیم35بدون روکش", "سیم50بدون روکش", "سیم70بدون روکش",
-    "کات اوت پلیمری", "کات اوت تیغه ای", "کات اوت سرامیکی", "کاور سوزنی پلیمری", "کاور سوزنی سرامیکی",
-    "کاور کات اوت", "کاوربوشینگ", "کراس آرم2.44", "کراس آرم 2متری", "کلمپ جمپر", "کلمپ هات لاین",
-    "مقره اتکایی", "مقره بشقابی پلیمری", "مقره بشقابی سرامیکی", "مقره جمپرگیر", "مقره سوزنی پلیمری",
-    "مقره سوزنی سرامیکی+میله مقره"
-]
+if "locations" not in st.session_state:
+    st.session_state.locations = [{"line_station": "", "code": ""}]
+if "gps" not in st.session_state:
+    st.session_state.gps = {"lat": "", "lon": "", "accuracy": ""}
 
 def show_login():
     st.title("ورود روزانه")
@@ -74,41 +42,43 @@ def show_login():
 
 def show_activity_form():
     st.subheader("افزودن عملیات جدید")
+
+    with st.form("meta_form"):
+        st.markdown("### اطلاعات محل اجرا")
+        for i, loc in enumerate(st.session_state.locations):
+            col1, col2 = st.columns([3, 2])
+            loc["line_station"] = col1.text_input(f"شماره خط و ایستگاه ({i+1})", value=loc["line_station"], placeholder="مثال: 301قرآن", key=f"line_station_{i}")
+            loc["code"] = col2.text_input(f"کد تضمین ({i+1})", value=loc["code"], key=f"code_{i}")
+        if st.form_submit_button("+ افزودن خط جدید"):
+            st.session_state.locations.append({"line_station": "", "code": ""})
+
+    # نمایش مکان جی‌پی‌اس فرضی (به‌جای داده واقعی)
+    st.markdown("**موقعیت مکانی (مثال):**")
+    st.session_state.gps = {
+        "lat": "29.6100",
+        "lon": "52.5310",
+        "accuracy": "±10m"
+    }
+    st.info(f"موقعیت فعلی: عرض {st.session_state.gps['lat']}، طول {st.session_state.gps['lon']} ({st.session_state.gps['accuracy']})")
+
     with st.form("act_form", clear_on_submit=True):
-        op = st.selectbox("نوع عملیات", operations)
-        line = st.text_input("شماره خط")
-        station = st.text_input("نام ایستگاه")
-        code = st.text_input("کد تضمین")
-        work_type = st.text_input("نوع کار")
-
-        st.markdown("### اقلام مصرفی")
-        cons_data = []
-        for i in range(3):
-            c_item = st.selectbox(f"کالای مصرفی {i+1}", options=consumables, key=f"cons{i}")
-            c_count = st.number_input(f"تعداد", min_value=1, step=1, key=f"cons_count{i}")
-            cons_data.append({"item": c_item, "count": c_count})
-
-        st.markdown("### اقلام برگشتی")
-        scrp_data = []
-        for i in range(2):
-            s_item = st.selectbox(f"کالای برگشتی {i+1}", options=scraps, key=f"scr{i}")
-            s_count = st.number_input(f"تعداد ", min_value=1, step=1, key=f"scr_count{i}")
-            scrp_data.append({"item": s_item, "count": s_count})
-
+        st.markdown("### اطلاعات عملیات")
+        op = st.selectbox("شرح فعالیت", activity_options)
+        work_type = st.selectbox("نوع کار", ["طرح شخصی", "طرح اداری", "اتفاقاتی", "تعمیرات پیشگیرانه"])
+        cons_items = st.text_area("اقلام مصرفی (مثلاً: پیچ 200 - 3)")
+        scrp_items = st.text_area("اقلام برگشتی (مثلاً: برقگیر سرامیکی - 1)")
         p1 = st.file_uploader("عکس قبل")
         p2 = st.file_uploader("عکس حین")
         p3 = st.file_uploader("عکس بعد")
         submit = st.form_submit_button("ثبت عملیات")
-
         if submit and p1 and p2 and p3:
             st.session_state.activities.append({
                 "operation": op,
-                "line": line,
-                "station": station,
-                "code": code,
                 "work_type": work_type,
-                "consumables": cons_data,
-                "scraps": scrp_data,
+                "locations": st.session_state.locations.copy(),
+                "gps": st.session_state.gps,
+                "consumables": cons_items,
+                "scraps": scrp_items,
                 "photos": {
                     "before": p1.name,
                     "during": p2.name,
@@ -121,7 +91,7 @@ def show_activity_form():
 def show_end_page():
     st.title("پایان روز")
     for i, act in enumerate(st.session_state.activities, 1):
-        st.markdown(f"### عملیات {i}: {act['operation']} - خط {act['line']}")
+        st.markdown(f"### عملیات {i}: {act['operation']} - نوع کار: {act['work_type']}")
 
     if st.button("تایید و دانلود گزارش"):
         data = {
