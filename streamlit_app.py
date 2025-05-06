@@ -94,8 +94,6 @@ def show_activity_form():
 
         st.markdown("### اطلاعات محل اجرا")
 
-        
-
         # اضافه کردن فیلدهای جدید به بخش "اطلاعات محل اجرا"
 
         work_type = st.selectbox("نوع کار", ["طرح شخصی", "طرح اداری", "اتفاقاتی", "تعمیرات پیشگیرانه"])
@@ -108,10 +106,6 @@ def show_activity_form():
 
         group_names = st.text_input("نام گروه‌های همکار")
 
-        
-
-        # جابجایی فیلدها (شماره خط و ایستگاه و کد تضمین بعد از گروه‌های همکار)
-
         for i, loc in enumerate(st.session_state.locations):
 
             col1, col2 = st.columns([3, 2])
@@ -119,8 +113,6 @@ def show_activity_form():
             loc["line_station"] = col1.text_input(f"شماره خط و ایستگاه ({i+1})", value=loc["line_station"], placeholder="مثال: 301قرآن", key=f"line_station_{i}")
 
             loc["code"] = col2.text_input(f"کد تضمین ({i+1})", value=loc["code"], key=f"code_{i}")
-
-        
 
         if st.form_submit_button("+ افزودن خط جدید"):
 
@@ -130,13 +122,7 @@ def show_activity_form():
 
     with st.form("act_form", clear_on_submit=True):
 
-        # اضافه کردن سر تیتر "جزییات اجرا"
-
         st.subheader("جزییات اجرا")
-
-        
-
-        # شرح فعالیت
 
         op = st.selectbox("شرح فعالیت", activity_options)
 
@@ -155,8 +141,6 @@ def show_activity_form():
             item["count"] = col2.number_input(f"تعداد", min_value=1, step=1, key=f"cons_count_{i}")
 
             cons_data.append(item)
-
-        # دکمه برای اضافه کردن کالای مصرفی جدید
 
         if st.button("ثبت کالای مصرفی جدید"):
 
@@ -177,8 +161,6 @@ def show_activity_form():
             item["count"] = col2.number_input(f"تعداد", min_value=1, step=1, key=f"scr_count_{i}")
 
             scrp_data.append(item)
-
-        # دکمه برای اضافه کردن کالای برگشتی جدید
 
         if st.button("ثبت کالای برگشتی جدید"):
 
@@ -255,8 +237,6 @@ def show_end_page():
     for i, act in enumerate(st.session_state.activities, 1):
 
         st.markdown(f"### عملیات {i}: نوع کار: {act['work_type']}")
-
-    
 
     if st.button("تایید و دانلود گزارش"):
 
