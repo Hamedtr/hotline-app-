@@ -8,7 +8,7 @@ from datetime import datetime
 
 # بارگذاری فایل‌های داده
 
-with open("activities_cleaned_final.json", "r", encoding="utf-8") as f:
+with open("activities.json", "r", encoding="utf-8") as f:
 
     activity_options = json.load(f)
 
