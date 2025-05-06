@@ -8,7 +8,7 @@ from datetime import datetime
 
 # بارگذاری فایل‌های داده
 
-with open("activities.json", "r", encoding="utf-8") as f:
+with open("activities_cleaned_final.json", "r", encoding="utf-8") as f:
 
     activity_options = json.load(f)
 
@@ -41,6 +41,14 @@ if "locations" not in st.session_state:
 if "gps" not in st.session_state:
 
     st.session_state.gps = {"lat": "29.6100", "lon": "52.5310", "accuracy": "±10m"}
+
+if "consumable_items" not in st.session_state:
+
+    st.session_state.consumable_items = [{"item": "", "count": 1}]
+
+if "scrap_items" not in st.session_state:
+
+    st.session_state.scrap_items = [{"item": "", "count": 1}]
 
 def show_login():
 
@@ -94,17 +102,9 @@ def show_activity_form():
 
             loc["code"] = col2.text_input(f"کد تضمین ({i+1})", value=loc["code"], key=f"code_{i}")
 
-        if st.form_submit_button("+ افزودن خط جدید"):
+        
 
-            st.session_state.locations.append({"line_station": "", "code": ""})
-
-    st.markdown(f"**موقعیت فعلی:** عرض {st.session_state.gps['lat']}، طول {st.session_state.gps['lon']} ({st.session_state.gps['accuracy']})")
-
-    with st.form("act_form", clear_on_submit=True):
-
-        st.markdown("### اطلاعات عملیات")
-
-        op = st.selectbox("شرح فعالیت", activity_options)
+        # اضافه کردن فیلدهای جدید به بخش "اطلاعات محل اجرا"
 
         work_type = st.selectbox("نوع کار", ["طرح شخصی", "طرح اداری", "اتفاقاتی", "تعمیرات پیشگیرانه"])
 
@@ -116,33 +116,73 @@ def show_activity_form():
 
         group_names = st.text_input("نام گروه‌های همکار")
 
+        if st.form_submit_button("+ افزودن خط جدید"):
+
+            st.session_state.locations.append({"line_station": "", "code": ""})
+
+    st.markdown(f"**موقعیت فعلی:** عرض {st.session_state.gps['lat']}، طول {st.session_state.gps['lon']} ({st.session_state.gps['accuracy']})")
+
+    with st.form("act_form", clear_on_submit=True):
+
+        # اضافه کردن سر تیتر "جزییات اجرا"
+
+        st.subheader("جزییات اجرا")
+
+        
+
+        # شرح فعالیت
+
+        op = st.selectbox("شرح فعالیت", activity_options)
+
+        # اقلام مصرفی
+
         st.markdown("### اقلام مصرفی")
 
         cons_data = []
 
-        more_cons = st.number_input("تعداد اقلام مصرفی", min_value=1, max_value=20, step=1, value=2)
+        for i, item in enumerate(st.session_state.consumable_items):
 
-        for i in range(more_cons):
+            col1, col2 = st.columns([3, 1])
 
-            c_item = st.selectbox(f"کالای مصرفی {i+1}", options=consumables, key=f"cons{i}")
+            item["item"] = col1.selectbox(f"کالای مصرفی {i+1}", options=consumables, key=f"cons_item_{i}")
 
-            c_count = st.number_input(f"تعداد", min_value=1, step=1, key=f"cons_count{i}")
+            item["count"] = col2.number_input(f"تعداد", min_value=1, step=1, key=f"cons_count_{i}")
 
-            cons_data.append({"item": c_item, "count": c_count})
+            cons_data.append(item)
+
+        
+
+        # دکمه برای اضافه کردن کالای مصرفی جدید
+
+        if st.button("ثبت کالای مصرفی جدید"):
+
+            st.session_state.consumable_items.append({"item": "", "count": 1})
+
+        # اقلام برگشتی
 
         st.markdown("### اقلام برگشتی")
 
         scrp_data = []
 
-        more_scraps = st.number_input("تعداد اقلام برگشتی", min_value=1, max_value=20, step=1, value=2)
+        for i, item in enumerate(st.session_state.scrap_items):
 
-        for i in range(more_scraps):
+            col1, col2 = st.columns([3, 1])
 
-            s_item = st.selectbox(f"کالای برگشتی {i+1}", options=scraps, key=f"scr{i}")
+            item["item"] = col1.selectbox(f"کالای برگشتی {i+1}", options=scraps, key=f"scr_item_{i}")
 
-            s_count = st.number_input(f"تعداد ", min_value=1, step=1, key=f"scr_count{i}")
+            item["count"] = col2.number_input(f"تعداد", min_value=1, step=1, key=f"scr_count_{i}")
 
-            scrp_data.append({"item": s_item, "count": s_count})
+            scrp_data.append(item)
+
+        
+
+        # دکمه برای اضافه کردن کالای برگشتی جدید
+
+        if st.button("ثبت کالای برگشتی جدید"):
+
+            st.session_state.scrap_items.append({"item": "", "count": 1})
+
+        # بارگذاری فایل‌های عکس
 
         p1 = st.file_uploader("عکس قبل")
 
@@ -150,7 +190,11 @@ def show_activity_form():
 
         p3 = st.file_uploader("عکس بعد")
 
-        submit = st.form_submit_button("ثبت عملیات")
+        
+
+        # اضافه کردن دکمه "ثبت فعالیت جدید"
+
+        submit = st.form_submit_button("ثبت فعالیت جدید")
 
         if submit and p1 and p2 and p3:
 
@@ -190,7 +234,19 @@ def show_activity_form():
 
             })
 
-            st.success("عملیات ثبت شد.")
+            st.success("عملیات جدید ثبت شد.")
+
+            # بعد از ثبت، تمام فیلدهای فرم خالی شوند
+
+            st.session_state.locations = [{"line_station": "", "code": ""}]
+
+            st.session_state.gps = {"lat": "29.6100", "lon": "52.5310", "accuracy": "±10m"}
+
+            st.session_state.consumable_items = [{"item": "", "count": 1}]
+
+            st.session_state.scrap_items = [{"item": "", "count": 1}]
+
+            st.experimental_rerun()
 
 def show_end_page():
 
@@ -198,7 +254,7 @@ def show_end_page():
 
     for i, act in enumerate(st.session_state.activities, 1):
 
-        st.markdown(f"### عملیات {i}: {act['operation']} - نوع کار: {act['work_type']}")
+        st.markdown(f"### عملیات {i}: نوع کار: {act['work_type']}")
 
     if st.button("تایید و دانلود گزارش"):
 
