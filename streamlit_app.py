@@ -17,7 +17,7 @@ with open("scraps.json", "r", encoding="utf-8") as f:
 st.set_page_config(page_title="Hotline 2.0", layout="centered")
 
 # وضعیت اولیه session
-for key, value in {
+defaults = {
     "user_code": None,
     "personnel": {},
     "activities": [],
@@ -25,7 +25,9 @@ for key, value in {
     "gps": {"lat": "29.6100", "lon": "52.5310", "accuracy": "±10m"},
     "consumable_items": [{"item": "", "count": 1}],
     "scrap_items": [{"item": "", "count": 1}],
-}.items():
+}
+
+for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
@@ -34,19 +36,23 @@ def show_login():
     st.title("ورود روزانه")
     today = jdatetime.date.today().strftime("%A %d %B %Y")
     st.markdown(f"### امروز: {today}")
+
     with st.form("login_form"):
         supervisor = st.text_input("نام سرپرست")
         p2 = st.text_input("نفر دوم")
         p3 = st.text_input("نفر سوم")
         driver = st.text_input("راننده")
         if st.form_submit_button("شروع ثبت"):
-            st.session_state.user_code = "ok"
-            st.session_state.personnel = {
-                "supervisor": supervisor,
-                "person2": p2,
-                "person3": p3,
-                "driver": driver
-            }
+            if not supervisor or not p2 or not p3 or not driver:
+                st.warning("لطفاً تمام فیلدهای نام‌ها را کامل وارد کنید.")
+            else:
+                st.session_state.user_code = "ok"
+                st.session_state.personnel = {
+                    "supervisor": supervisor,
+                    "person2": p2,
+                    "person3": p3,
+                    "driver": driver,
+                }
 
 # فرم ثبت عملیات
 def show_activity_form():
@@ -59,15 +65,19 @@ def show_activity_form():
         related_dept = st.text_input("امور مربوطه")
         address = st.text_input("آدرس محل کار")
         group_names = st.text_input("نام گروه‌های همکار")
+
         for i, loc in enumerate(st.session_state.locations):
             col1, col2 = st.columns([3, 2])
             loc["line_station"] = col1.text_input(f"شماره خط و ایستگاه ({i+1})", value=loc["line_station"], key=f"line_station_{i}")
             loc["code"] = col2.text_input(f"کد تضمین ({i+1})", value=loc["code"], key=f"code_{i}")
+
         if st.form_submit_button("+ افزودن خط جدید"):
             st.session_state.locations.append({"line_station": "", "code": ""})
 
     st.markdown(f"**موقعیت فعلی:** عرض {st.session_state.gps['lat']}، طول {st.session_state.gps['lon']} ({st.session_state.gps['accuracy']})")
 
+    # دکمه‌های افزودن کالا (از نظر ظاهری داخل فرم)
+    st.markdown("### اقلام مصرفی")
     col1, col2 = st.columns(2)
     if col1.button("ثبت کالای مصرفی جدید"):
         st.session_state.consumable_items.append({"item": "", "count": 1})
@@ -127,7 +137,7 @@ def show_activity_form():
                 st.session_state.scrap_items = [{"item": "", "count": 1}]
                 st.experimental_rerun()
 
-# صفحه پایان روز
+# پایان روز و خروجی
 def show_end_page():
     st.title("پایان روز")
     for i, act in enumerate(st.session_state.activities, 1):
@@ -140,7 +150,7 @@ def show_end_page():
         }
         st.download_button("دانلود فایل JSON", json.dumps(data, ensure_ascii=False), file_name="hotline_v2.json")
 
-# کنترل مسیر اصلی برنامه
+# کنترل مسیر اصلی
 if st.session_state.user_code is None:
     show_login()
 else:
