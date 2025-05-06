@@ -94,14 +94,6 @@ def show_activity_form():
 
         st.markdown("### اطلاعات محل اجرا")
 
-        for i, loc in enumerate(st.session_state.locations):
-
-            col1, col2 = st.columns([3, 2])
-
-            loc["line_station"] = col1.text_input(f"شماره خط و ایستگاه ({i+1})", value=loc["line_station"], placeholder="مثال: 301قرآن", key=f"line_station_{i}")
-
-            loc["code"] = col2.text_input(f"کد تضمین ({i+1})", value=loc["code"], key=f"code_{i}")
-
         
 
         # اضافه کردن فیلدهای جدید به بخش "اطلاعات محل اجرا"
@@ -115,6 +107,20 @@ def show_activity_form():
         address = st.text_input("آدرس محل کار")
 
         group_names = st.text_input("نام گروه‌های همکار")
+
+        
+
+        # جابجایی فیلدها (شماره خط و ایستگاه و کد تضمین بعد از گروه‌های همکار)
+
+        for i, loc in enumerate(st.session_state.locations):
+
+            col1, col2 = st.columns([3, 2])
+
+            loc["line_station"] = col1.text_input(f"شماره خط و ایستگاه ({i+1})", value=loc["line_station"], placeholder="مثال: 301قرآن", key=f"line_station_{i}")
+
+            loc["code"] = col2.text_input(f"کد تضمین ({i+1})", value=loc["code"], key=f"code_{i}")
+
+        
 
         if st.form_submit_button("+ افزودن خط جدید"):
 
@@ -150,8 +156,6 @@ def show_activity_form():
 
             cons_data.append(item)
 
-        
-
         # دکمه برای اضافه کردن کالای مصرفی جدید
 
         if st.button("ثبت کالای مصرفی جدید"):
@@ -174,8 +178,6 @@ def show_activity_form():
 
             scrp_data.append(item)
 
-        
-
         # دکمه برای اضافه کردن کالای برگشتی جدید
 
         if st.button("ثبت کالای برگشتی جدید"):
@@ -189,8 +191,6 @@ def show_activity_form():
         p2 = st.file_uploader("عکس حین")
 
         p3 = st.file_uploader("عکس بعد")
-
-        
 
         # اضافه کردن دکمه "ثبت فعالیت جدید"
 
@@ -255,6 +255,8 @@ def show_end_page():
     for i, act in enumerate(st.session_state.activities, 1):
 
         st.markdown(f"### عملیات {i}: نوع کار: {act['work_type']}")
+
+    
 
     if st.button("تایید و دانلود گزارش"):
 
