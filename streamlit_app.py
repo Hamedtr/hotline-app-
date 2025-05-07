@@ -4,8 +4,6 @@ import json
 from datetime import datetime
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 import os
@@ -157,23 +155,18 @@ for i, addr in enumerate(st.session_state.activities, 1):
     for j, op in enumerate(addr["operations"], 1):
         st.markdown(f"- {j}. {op['operation']} × {op['count']}")
 
-# خروجی PDF و JSON
+# خروجی PDF و JSON بدون فونت سفارشی
 def generate_pdf(data):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
-    font_path = "fonts/Vazir.ttf"
-    if not os.path.exists(font_path):
-        st.error("فونت Vazir.ttf پیدا نشد.")
-        return None
-    pdfmetrics.registerFont(TTFont("Vazir", font_path))
-    c.setFont("Vazir", 13)
+    c.setFont("Helvetica", 13)
     width, height = A4
     y = height - 2*cm
     c.drawRightString(width - 2*cm, y, "توزیع برق شیراز – عملیات خط گرم")
     y -= 1*cm
     c.drawRightString(width - 2*cm, y, "گزارش عملیات روزانه - Hotline 3.0")
     y -= 1*cm
-    c.setFont("Vazir", 11)
+    c.setFont("Helvetica", 11)
     c.drawRightString(width - 2*cm, y, f"تاریخ: {jdatetime.date.today().strftime('%Y/%m/%d')}")
     y -= 1.2*cm
     for i, addr in enumerate(data["activities"], 1):
@@ -185,7 +178,7 @@ def generate_pdf(data):
         y -= 0.6*cm
         if y < 5*cm:
             c.showPage()
-            c.setFont("Vazir", 13)
+            c.setFont("Helvetica", 13)
             y = height - 2*cm
     c.save()
     buffer.seek(0)
