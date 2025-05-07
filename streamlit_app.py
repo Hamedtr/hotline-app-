@@ -3,12 +3,14 @@ import jdatetime
 import json
 from datetime import datetime
 from io import BytesIO
+from PIL import Image
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
+from reportlab.lib.utils import ImageReader
 import os
 
-# بارگذاری داده‌ها
+# بارگذاری فایل‌های داده
 with open("activities.json", "r", encoding="utf-8") as f:
     activity_options = json.load(f)
 with open("consumables.json", "r", encoding="utf-8") as f:
@@ -21,7 +23,7 @@ st.set_page_config(page_title="Hotline 3.0", layout="centered")
 def with_empty_option(lst):
     return ["--- انتخاب کنید ---"] + lst
 
-# صفحه ورود اولیه
+# صفحه ورود پرسنل
 if "user_code" not in st.session_state:
     st.session_state.user_code = None
 if "personnel" not in st.session_state:
@@ -73,7 +75,7 @@ if "current_operation" not in st.session_state:
         "photos": {"before": None, "during": None, "after": None}
     }
 
-# فرم آدرس و عملیات
+# فرم آدرس
 st.title("ثبت عملیات برای یک آدرس")
 st.markdown("### اطلاعات کلی آدرس")
 st.session_state.current_address["work_type"] = st.selectbox("نوع کار", ["طرح شخصی", "طرح اداری", "اتفاقاتی", "تعمیرات پیشگیرانه"])
@@ -155,49 +157,93 @@ for i, addr in enumerate(st.session_state.activities, 1):
     for j, op in enumerate(addr["operations"], 1):
         st.markdown(f"- {j}. {op['operation']} × {op['count']}")
 
-# خروجی PDF و JSON بدون فونت سفارشی
-def generate_pdf(data):
+# خروجی PDF با عکس‌ها
+def generate_pdf_with_images(data):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     c.setFont("Helvetica", 13)
     width, height = A4
-    y = height - 2*cm
-    c.drawRightString(width - 2*cm, y, "توزیع برق شیراز – عملیات خط گرم")
-    y -= 1*cm
-    c.drawRightString(width - 2*cm, y, "گزارش عملیات روزانه - Hotline 3.0")
-    y -= 1*cm
+    y = height - 2 * cm
+
+    c.drawRightString(width - 2 * cm, y, "توزیع برق شیراز – عملیات خط گرم")
+    y -= 1 * cm
+    c.drawRightString(width - 2 * cm, y, "گزارش عملیات روزانه - Hotline 3.0")
+    y -= 1 * cm
     c.setFont("Helvetica", 11)
-    c.drawRightString(width - 2*cm, y, f"تاریخ: {jdatetime.date.today().strftime('%Y/%m/%d')}")
-    y -= 1.2*cm
+    c.drawRightString(width - 2 * cm, y, f"تاریخ: {jdatetime.date.today().strftime('%Y/%m/%d')}")
+    y -= 1.2 * cm
+
     for i, addr in enumerate(data["activities"], 1):
-        c.drawRightString(width - 2*cm, y, f"آدرس {i}: {addr['address']} ({addr['work_type']})")
-        y -= 0.8*cm
+        c.drawRightString(width - 2 * cm, y, f"آدرس {i}: {addr['address']} ({addr['work_type']})")
+        y -= 0.8 * cm
+
         for j, op in enumerate(addr["operations"], 1):
-            c.drawRightString(width - 2*cm, y, f"- عملیات {j}: {op['operation']} × {op['count']}")
-            y -= 0.6*cm
-        y -= 0.6*cm
-        if y < 5*cm:
-            c.showPage()
-            c.setFont("Helvetica", 13)
-            y = height - 2*cm
+            c.drawRightString(width - 2 * cm, y, f"- عملیات {j}: {op['operation']} × {op['count']}")
+            y -= 0.6 * cm
+
+            cons = "، ".join([f"{c['item']} × {c['count']}" for c in op["consumables"]])
+            if cons:
+                c.drawRightString(width - 2 * cm, y, f"  اقلام مصرفی: {cons}")
+                y -= 0.5 * cm
+
+            scr = "، ".join([f"{s['item']} × {s['count']}" for s in op["scraps"]])
+            if scr:
+                c.drawRightString(width - 2 * cm, y, f"  اقلام برگشتی: {scr}")
+                y -= 0.5 * cm
+
+            labels = ["قبل", "حین", "بعد"]
+            keys = ["before", "during", "after"]
+            imgs = []
+
+            for k in keys:
+                f = op["photos"][k]
+                if f:
+                    try:
+                        img = Image.open(f)
+                        img.thumbnail((100, 100))
+                        temp = BytesIO()
+                        img.save(temp, format="PNG")
+                        temp.seek(0)
+                        imgs.append(ImageReader(temp))
+                    except:
+                        imgs.append(None)
+                else:
+                    imgs.append(None)
+
+            img_y = y
+            for idx, im in enumerate(imgs):
+                if im:
+                    x = width - (2 + idx * 3) * cm
+                    c.drawImage(im, x, img_y - 2.5 * cm, width=2.5 * cm, height=2.5 * cm)
+                    c.drawRightString(x + 2.5 * cm, img_y - 2.6 * cm, labels[idx])
+            y = img_y - 3.2 * cm
+
+            if y < 6 * cm:
+                c.showPage()
+                c.setFont("Helvetica", 11)
+                y = height - 2 * cm
+        y -= 0.8 * cm
+
     c.save()
     buffer.seek(0)
     return buffer
 
+# خروجی
 def export_results():
     st.markdown("---")
-    st.markdown("### خروجی گزارش")
+    st.markdown("### خروجی گزارش روز")
     data = {
         "date": jdatetime.date.today().isoformat(),
         "personnel": st.session_state.personnel,
         "activities": st.session_state.activities
     }
-    json_buffer = BytesIO()
-    json_buffer.write(json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
-    json_buffer.seek(0)
-    st.download_button("دانلود گزارش JSON", json_buffer, file_name="hotline_report.json", mime="application/json")
-    pdf_buffer = generate_pdf(data)
-    if pdf_buffer:
-        st.download_button("دانلود گزارش PDF", pdf_buffer, file_name="hotline_report.pdf", mime="application/pdf")
+    jbuf = BytesIO()
+    jbuf.write(json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
+    jbuf.seek(0)
+    st.download_button("دانلود JSON", jbuf, file_name="report.json", mime="application/json")
+
+    pbuf = generate_pdf_with_images(data)
+    if pbuf:
+        st.download_button("دانلود PDF", pbuf, file_name="report.pdf", mime="application/pdf")
 
 export_results()
