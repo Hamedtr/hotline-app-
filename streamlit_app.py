@@ -204,3 +204,20 @@ if col_finish.button("پایان عملیات"):
         "operation": "",
         "count": 1,
         "consumables": [{"item":
+        "consumables": [{"item": "", "count": 1}],
+        "scraps": [{"item": "", "count": 1}],
+        "photos": {"before": None, "during": None, "after": None}
+    }
+    st.success("آدرس ثبت شد و عملیات‌ها نهایی شدند.")
+
+# دکمه دانلود PDF
+if st.session_state.daily_data:
+    if st.button("دریافت PDF"):
+        last_entry = st.session_state.daily_data[-1]
+        pdf_buffer = generate_pdf(last_entry)
+        st.download_button(
+            label="دانلود گزارش PDF",
+            data=pdf_buffer,
+            file_name=f"report_{last_entry['date']}.pdf",
+            mime="application/pdf"
+        )
