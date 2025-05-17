@@ -45,8 +45,21 @@ if "current_operation" not in st.session_state:
         "photos": {"before": None, "during": None, "after": None}
     }
 
-# فرم ثبت اطلاعات روزانه
-group_name = st.text_input("نام گروه:")
+# بخش اصلی - اطلاعات روزانه
+st.title("ثبت اطلاعات روزانه گروه")
+
+today = datetime.now().strftime("%Y/%m/%d")
+st.markdown(f"### تاریخ امروز: {today}")
+
+col1, col2 = st.columns(2)
+with col1:
+    leader = st.text_input("سرپرست")
+    member2 = st.text_input("نفر دوم")
+with col2:
+    member3 = st.text_input("نفر سوم")
+    driver = st.text_input("راننده")
+
+group_name = f"{leader}, {member2}, {member3}, {driver}"
 activity_details = st.text_area("جزئیات فعالیت‌های روزانه:")
 comments = st.text_area("نظرات و یادداشت‌ها:")
 
@@ -100,13 +113,11 @@ for i, item in enumerate(st.session_state.current_operation["scraps"]):
 if st.button("افزودن کالای برگشتی"):
     st.session_state.current_operation["scraps"].append({"item": "", "count": 1})
 
-# عکس‌ها
 st.subheader("عکس‌ها")
 st.session_state.current_operation["photos"]["before"] = st.file_uploader("عکس قبل")
 st.session_state.current_operation["photos"]["during"] = st.file_uploader("عکس حین")
 st.session_state.current_operation["photos"]["after"] = st.file_uploader("عکس بعد")
 
-# دکمه‌ها
 if st.button("افزودن عملیات"):
     st.session_state.current_address["operations"].append(st.session_state.current_operation.copy())
     st.session_state.current_operation = {
